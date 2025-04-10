@@ -1,0 +1,31 @@
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@master
+    - name: Deploy code to Lambda
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+    - name: Build requirements 
+      run: |
+        
+        python3 -m venv build
+        pip3 install wheel
+        cp requirements.txt build/
+        cp lambda_function.py build/
+        cd build 
+        source bin/activate 
+        pip3 install -r requirements.txt
+        cd lib/*/site-packages 
+        zip -r ../../../get_sfn_executions_daily.zip . 
+        cd ../../../
+        zip -g get_sfn_executions_daily.zip lambda_function.py
+        aws lambda update-function-code --function-name=get_sfn_executions_daily --zip-file=fileb://get_sfn_executions_daily.zip
