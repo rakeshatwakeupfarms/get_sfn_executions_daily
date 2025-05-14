@@ -49,17 +49,16 @@ def get_executions_today_dublin_with_input(state_machine_arn):
                         {
                             "executionArn": execution["executionArn"],
                             "status": execution["status"],
-                            "startDate": str(
-                                execution["startDate"]
-                            ),  # Convert datetime to string for JSON serialization
+                            "startDate": str(execution["startDate"]),
                             "input": execution_details.get("input"),
+                            "stateMachineArn": state_machine_arn,  # Add state machine ARN to identify source
                         }
                     )
 
         return executions_today_with_input
 
     except Exception as e:
-        print(f"Error getting executions: {str(e)}")
+        print(f"Error getting executions for {state_machine_arn}: {str(e)}")
         return []
 
 
@@ -68,33 +67,42 @@ def lambda_handler(event, context):
     AWS Lambda handler function.
     """
     try:
-        # Get state machine ARN from environment variable or use default
-        state_machine_arn = os.environ.get(
-            "STATE_MACHINE_ARN",
+        # List of state machine ARNs to check
+        state_machine_arns = [
             "arn:aws:states:eu-west-1:518923560508:stateMachine:WakeupFarms_StepFunctions_v11_auto-retry",
-        )
+            "arn:aws:states:eu-west-1:518923560508:stateMachine:WakeupFarms_StepFunctions_v12_weath",
+        ]
 
-        executions_with_input = get_executions_today_dublin_with_input(
-            state_machine_arn
-        )
+        # Get executions from all state machines
+        all_executions = []
+        for arn in state_machine_arns:
+            executions = get_executions_today_dublin_with_input(arn)
+            all_executions.extend(executions)
 
-        if executions_with_input:
-            current_date = datetime.now(timezone(timedelta(hours=1))).strftime(
-                "%Y-%m-%d"
-            )
+        current_date = datetime.now(timezone(timedelta(hours=1))).strftime("%Y-%m-%d")
+
+        if all_executions:
+            # Group executions by state machine
+            executions_by_machine = {}
+            for execution in all_executions:
+                arn = execution["stateMachineArn"]
+                if arn not in executions_by_machine:
+                    executions_by_machine[arn] = []
+                executions_by_machine[arn].append(execution)
+
             response_body = {
                 "date": current_date,
-                "execution_count": len(executions_with_input),
-                "executions": executions_with_input,
+                "total_execution_count": len(all_executions),
+                "executions_by_machine": {
+                    arn: {"execution_count": len(execs), "executions": execs}
+                    for arn, execs in executions_by_machine.items()
+                },
             }
         else:
-            current_date = datetime.now(timezone(timedelta(hours=1))).strftime(
-                "%Y-%m-%d"
-            )
             response_body = {
                 "date": current_date,
-                "message": "No executions found for the current day",
-                "executions": [],
+                "message": "No executions found for any state machine for the current day",
+                "executions_by_machine": {},
             }
 
         return {"statusCode": 200, "body": json.dumps(response_body, indent=2)}
