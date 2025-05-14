@@ -16,6 +16,7 @@ def get_executions_today_dublin_with_input(state_machine_arn):
         list: A list of execution details (dictionaries) that started today in Dublin,
               including 'executionArn', 'status', 'startDate', and 'input'.
     """
+    print(f"Fetching executions for state machine: {state_machine_arn}")
     client = boto3.client(
         "stepfunctions", region_name=os.environ.get("AWS_REGION") or "eu-west-1"
     )
@@ -33,11 +34,16 @@ def get_executions_today_dublin_with_input(state_machine_arn):
     start_of_day_utc = start_of_day_dublin - utc_offset
     end_of_day_utc = end_of_day_dublin - utc_offset
 
+    print(
+        f"Searching for executions between UTC: {start_of_day_utc} and {end_of_day_utc}"
+    )
+
     paginator = client.get_paginator("list_executions")
     executions_today_with_input = []
 
     try:
         for page in paginator.paginate(stateMachineArn=state_machine_arn):
+            print(f"Found {len(page['executions'])} executions in current page")
             for execution in page["executions"]:
                 start_time_utc = execution["startDate"].replace(tzinfo=timezone.utc)
                 if start_of_day_utc <= start_time_utc < end_of_day_utc:
@@ -51,10 +57,13 @@ def get_executions_today_dublin_with_input(state_machine_arn):
                             "status": execution["status"],
                             "startDate": str(execution["startDate"]),
                             "input": execution_details.get("input"),
-                            "stateMachineArn": state_machine_arn,  # Add state machine ARN to identify source
+                            "stateMachineArn": state_machine_arn,
                         }
                     )
 
+        print(
+            f"Found {len(executions_today_with_input)} executions today for {state_machine_arn}"
+        )
         return executions_today_with_input
 
     except Exception as e:
@@ -70,8 +79,10 @@ def lambda_handler(event, context):
         # List of state machine ARNs to check
         state_machine_arns = [
             "arn:aws:states:eu-west-1:518923560508:stateMachine:WakeupFarms_StepFunctions_v11_auto-retry",
-            "arn:aws:states:eu-west-1:518923560508:stateMachine:WakeupFarms_StepFunctions_v12_weath",
+            "arn:aws:states:eu-west-1:518923560508:stateMachine:WakeupFarms_StepFunctions_v12_weather",  # Updated to full name
         ]
+
+        print(f"Starting execution check for {len(state_machine_arns)} state machines")
 
         # Get executions from all state machines
         all_executions = []
@@ -108,4 +119,5 @@ def lambda_handler(event, context):
         return {"statusCode": 200, "body": json.dumps(response_body, indent=2)}
 
     except Exception as e:
+        print(f"Error in lambda_handler: {str(e)}")
         return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
