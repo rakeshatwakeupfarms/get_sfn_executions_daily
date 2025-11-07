@@ -78,8 +78,7 @@ def lambda_handler(event, context):
     try:
         # List of state machine ARNs to check
         state_machine_arns = [
-            "arn:aws:states:eu-west-1:518923560508:stateMachine:WakeupFarms_StepFunctions_v11_auto-retry",
-            "arn:aws:states:eu-west-1:518923560508:stateMachine:WakeupFarms_StepFunctions_v12_weather",  # Updated to full name
+            "arn:aws:states:eu-west-1:750014326377:stateMachine:WakeupFarms_StepFunctions_v15-Bigquerygcp"
         ]
 
         print(f"Starting execution check for {len(state_machine_arns)} state machines")
