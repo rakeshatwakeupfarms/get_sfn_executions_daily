@@ -13,7 +13,7 @@ This replaces the data and formatting work previously handled by Make.com and Ge
 
 - `AWS_REGION`: AWS region for Step Functions. Defaults to `eu-west-1`.
 - `STATE_MACHINE_ARNS`: comma-separated Step Function ARNs. Defaults to `WakeupFarms_StepFunctions_v16-Bigquerygcp`.
-- `REPORT_WATSAPP_NUMBER`: fallback WhatsApp chat/group ID for the report.
+- `REPORT_WATSAPP_NUMBER`: fallback WhatsApp chat/group ID for the report. Deployment sets this to `120363391709082522@g.us`.
 - `REPORT_WHATSAPP_NUMBER`: alternate spelling fallback for the report chat/group ID.
 
 ## Input

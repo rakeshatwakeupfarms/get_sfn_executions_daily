@@ -33,6 +33,7 @@ jobs:
     - name: Configure Lambda environment
       run: |
         STATE_MACHINE_ARNS="arn:aws:states:eu-west-1:750014326377:stateMachine:WakeupFarms_StepFunctions_v16-Bigquerygcp"
+        REPORT_WATSAPP_NUMBER="120363391709082522@g.us"
         CURRENT_ENV=$(aws lambda get-function-configuration \
           --function-name=get_sfn_executions_daily \
           --query 'Environment.Variables' \
@@ -40,7 +41,8 @@ jobs:
         UPDATED_ENV=$(jq -cn \
           --argjson current "${CURRENT_ENV:-null}" \
           --arg state_machine_arns "$STATE_MACHINE_ARNS" \
-          '{Variables: (($current // {}) + {STATE_MACHINE_ARNS: $state_machine_arns})}')
+          --arg report_watsapp_number "$REPORT_WATSAPP_NUMBER" \
+          '{Variables: (($current // {}) + {STATE_MACHINE_ARNS: $state_machine_arns, REPORT_WATSAPP_NUMBER: $report_watsapp_number})}')
         aws lambda update-function-configuration \
           --function-name=get_sfn_executions_daily \
           --environment "$UPDATED_ENV"
