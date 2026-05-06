@@ -29,3 +29,17 @@ jobs:
         cd ../../../
         zip -g get_sfn_executions_daily.zip lambda_function.py
         aws lambda update-function-code --function-name=get_sfn_executions_daily --zip-file=fileb://get_sfn_executions_daily.zip
+    - name: Configure Lambda environment
+      run: |
+        STATE_MACHINE_ARNS="arn:aws:states:eu-west-1:750014326377:stateMachine:WakeupFarms_StepFunctions_v16-Bigquerygcp"
+        CURRENT_ENV=$(aws lambda get-function-configuration \
+          --function-name=get_sfn_executions_daily \
+          --query 'Environment.Variables' \
+          --output json)
+        UPDATED_ENV=$(jq -cn \
+          --argjson current "${CURRENT_ENV:-null}" \
+          --arg state_machine_arns "$STATE_MACHINE_ARNS" \
+          '{Variables: (($current // {}) + {STATE_MACHINE_ARNS: $state_machine_arns})}')
+        aws lambda update-function-configuration \
+          --function-name=get_sfn_executions_daily \
+          --environment "$UPDATED_ENV"
